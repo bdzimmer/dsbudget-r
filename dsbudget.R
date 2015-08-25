@@ -13,7 +13,7 @@ library(dplyr)
 
 
 
-#' Load xml for all pages in a dsBudget XML.
+#' Load page XML elements from a dsBudget XML file.
 #'
 #' @param inputFile    name of dsBudget XML file
 #' @param inputDir     containing directory of dsBudget XML file
@@ -48,8 +48,6 @@ pageToDataFrame <- function(page) {
 
   # for each category, get the date and sum up the items
   result <- do.call(rbind, lapply(categories, function(x) {
-
-    # print(x)
 
     attributes <- xmlAttrs(x)
     categoryName <- attributes["name"]
@@ -94,7 +92,7 @@ pageToDataFrame <- function(page) {
 
 
 
-#' Plot savings or spending goals
+#' Plot saving or spending goals.
 #'
 #' @param spends           dataframe of transactions
 #' @param whichCategory    vector of categories to examine
@@ -146,4 +144,3 @@ plotGoals <- function(spends, whichCategory, goalAmount, goalEndDate, goalType =
   title(main = whichCategory[1])
 
 }
-
