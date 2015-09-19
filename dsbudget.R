@@ -5,6 +5,8 @@
 # 2015-08-19: Created.
 # 2015-08-23: Correct results.
 # 2015-08-24: Cleaned up and commented.
+# 2015-09-19: Load item descriptions.
+#             Thermometer-type chart for goals.
 
 
 library(XML)
@@ -64,27 +66,31 @@ pageToDataFrame <- function(page) {
       wheres <- sapply(spends, function(x) {
         xmlAttrs(x)["where"]
       })
-
+      description <- sapply(spends, function(x) {
+        xmlAttrs(x)["desc"]
+      })
     } else {
       spendDates <- c()
       amounts <- c()
       wheres <- c()
+      description <- c()
     }
 
     data.frame(categoryName = categoryName,
                spendDate = c(pageCtime, spendDates),
                amount = c(categoryBudget, amounts),
                where = c("budget", wheres),
+               desc = c("budget", description),
                pageName = xmlAttrs(page)["name"],
                stringsAsFactors = FALSE)
 
   }))
 
   result$spendDate <- as.Date(as.POSIXct(result$spendDate, origin = "1970-01-01"))
-  result <- result[, c(5, 1, 2, 3, 4)]
+  result <- result[, c(6, 1, 2, 3, 4, 5)]
   result <- result %>% filter(!grepl("(Balance from+)", where))
 
-  rownames(result) <- NULL
+  row.names(result) <- NULL
 
   result
 
@@ -102,7 +108,7 @@ pageToDataFrame <- function(page) {
 #' @return nothing
 
 plotGoals <- function(spends, whichCategory, goalAmount, goalEndDate, goalType = "save") {
-
+  
   curSpends <- spends %>%
     filter(categoryName %in% whichCategory) %>%
     arrange(spendDate)
@@ -116,12 +122,19 @@ plotGoals <- function(spends, whichCategory, goalAmount, goalEndDate, goalType =
 
   startDate <- as.Date(paste0(substr(head(curSpends$spendDate, 1), 1, 5), "01-01"))
   endDate <- as.Date(paste0(substr(goalEndDate + 365, 1, 5), "01-01"))
+  plotRange <- range(c(curSpends$cumAmount, 0, goalAmount))
+  
+  layout(matrix(c(1 ,2), nrow = 1, ncol = 2),
+         widths = c(5, 1))
 
+  # bottom, left, top, right
+  par(mar = c(4, 4, 0, 1))
+  
   plot(0, type = "n",
        xlim = c(startDate, endDate),
-       ylim = range(c(curSpends$cumAmount, 0, goalAmount)),
+       ylim = plotRange,
        xaxt = "n",
-       xlab = "date", ylab = "amount")
+       xlab = "Date", ylab = "Amount")
 
   axis.Date(side = 1, at = seq.Date(startDate, endDate, "quarter"), format = "%Y-%m-%d")
 
@@ -135,12 +148,28 @@ plotGoals <- function(spends, whichCategory, goalAmount, goalEndDate, goalType =
 
 
   lines(curSpends$cumAmount ~ curSpends$spendDate,
-        col = "blue", type = "o", lwd = 3)
+        col = "#0000FFA0", type = "o", lwd = 3)
 
   lines(c(tail(curSpends$spendDate, 1), goalEndDate),
         c(tail(curSpends$cumAmount, 1), goalAmount),
-        col = "green", type = "o", lwd = "3")
+        col = "#00FF00A0", type = "o", lwd = "3")
 
-  title(main = whichCategory[1])
+  # title(main = whichCategory[1])
+  
+  curAmount <- tail(curSpends$cumAmount, 1)
+  
+  par(mar = c(4, 1, 0, 4))
+  
+  plot(0, type = "n",
+       xaxt = "n", yaxt = "n",
+       xlab = paste0(round(curAmount / goalAmount * 100, 2), "%"),
+       ylab = "",
+       xlim = c(0, 1), ylim = plotRange)
+  
+  abline(h = seq(from = 0, to = goalAmount, by = amountBy), col = "lightgray")
+  abline(h = c(0, goalAmount), col = "black")
+  
+  rect(0, 0, 1, curAmount, col = "#0000FFA0")
+  axis(4)
 
 }
