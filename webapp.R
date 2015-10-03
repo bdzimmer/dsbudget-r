@@ -3,6 +3,7 @@
 # Web app for visualizing financial goals.
 
 # 2015-09-19: Created.
+# 2015-10-03: View date control for viewing changes from month to month.
 
 library(shiny)
 
@@ -16,10 +17,10 @@ pages <- loadPages(conf$inputFile, conf$inputDir)
 spends <- do.call(rbind, lapply(pages, pageToDataFrame))
 categories <- sort(unique(spends$categoryName))
 
-
 app <- shinyApp(
   
   ui = fluidPage(
+    
     titlePanel("Financial Goals"),
     
     sidebarLayout(position = "right",
@@ -32,6 +33,9 @@ app <- shinyApp(
           "enddate", "End Date", endDates,
           selected = conf$endDateDefault),
         selectInput("type", "Goal Type", c("save", "spend")),
+        selectInput(
+          "viewdate", "View Date", endDates,
+          selected = conf$endDateDefault),
         width = 3
       ),
       
@@ -43,17 +47,24 @@ app <- shinyApp(
   
   
   server = function(input, output) {
+    
     output$plot <- renderPlot({
       
       if (length(input$category) > 0) {
         
         curDate <- as.Date(as.integer(input$enddate), origin = "1970-01-01")
-        amount <- as.numeric(input$amount) * (if (input$type == "save") 1 else -1) 
+        viewDate <- as.Date(as.integer(input$viewdate), origin = "1970-01-01")
+        
+        goalAmount <- as.numeric(input$amount) * (if (input$type == "save") 1 else -1)
+        
+        curSpends <- spends %>%
+          filter(categoryName %in% input$category) %>%
+          filter(spendDate <= viewDate) %>%
+          arrange(spendDate)
         
         plotGoals(
-          spends,
-          input$category,
-          amount,
+          curSpends,
+          goalAmount,
           curDate,
           input$type)
       

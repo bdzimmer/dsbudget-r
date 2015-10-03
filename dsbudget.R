@@ -100,24 +100,19 @@ pageToDataFrame <- function(page) {
 
 #' Plot saving or spending goals.
 #'
-#' @param spends           dataframe of transactions
-#' @param whichCategory    vector of categories to examine
+#' @param curSpends        dataframe of transactions to examine
 #' @param goalAmount       goal amount to save or spend
 #' @param goalEndDate      goal date
 #' @param goalType         goal type (save or spend)
 #' @return nothing
 
-plotGoals <- function(spends, whichCategory, goalAmount, goalEndDate, goalType = "save") {
-  
-  curSpends <- spends %>%
-    filter(categoryName %in% whichCategory) %>%
-    arrange(spendDate)
+plotGoals <- function(curSpends, goalAmount, goalEndDate, goalType = "save") {
 
   if (goalType == "save") {
     curSpends$cumAmount <- cumsum(curSpends$amount)
   } else {
-    spends <- ifelse(curSpends$amount < 0, curSpends$amount, 0)
-    curSpends$cumAmount <- cumsum(spends)
+    spendAmounts <- ifelse(curSpends$amount < 0, curSpends$amount, 0)
+    curSpends$cumAmount <- cumsum(spendAmounts)
   }
 
   startDate <- as.Date(paste0(substr(head(curSpends$spendDate, 1), 1, 5), "01-01"))
